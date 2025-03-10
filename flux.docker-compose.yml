@@ -1,0 +1,88 @@
+version: "3.8"
+
+services:
+  loki:
+    image: grafana/loki:2.4.1
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    networks:
+      - app
+
+  promtail:
+    image: grafana/promtail:2.4.1
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log
+    networks:
+      - app
+
+  grafana:
+    image: grafana/grafana:8.2.2
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    volumes:
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    networks:
+      - app
+
+  nats:
+    image: 'nats:alpine3.20'
+    restart: unless-stopped
+    expose:
+      - "4222"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    environment:
+      - NATS_MONITOR_PORT=8222
+    hostname: nats-server
+    networks:
+      - app
+
+  nats-exporter:
+    image: synadia/prometheus-nats-exporter:latest
+    container_name: nats-exporter
+    restart: unless-stopped
+    command: "-varz http://nats-server:8222"
+    ports:
+      - "7777:7777"
+    depends_on:
+      - nats
+    hostname: nats-exporter
+    networks:
+      - app
+
+  node-exporter:
+    image: prom/node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    hostname: node-exporter
+    networks:
+      - app
+
+  prometheus:
+    image: prom/prometheus
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /var/run/docker.sock:/var/run/docker.sock
+    hostname: prometheus
+    networks:
+      - app
+
+networks:
+  app:
+    name: "flux-network"
+    attachable: true
