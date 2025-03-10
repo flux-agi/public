@@ -60,15 +60,6 @@ services:
     networks:
       - app
 
-  node-exporter:
-    image: prom/node-exporter
-    restart: unless-stopped
-    ports:
-      - "9100:9100"
-    hostname: node-exporter
-    networks:
-      - app
-
   prometheus:
     image: prom/prometheus
     restart: unless-stopped
