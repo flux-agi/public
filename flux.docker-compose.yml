@@ -2,7 +2,7 @@ version: "3.8"
 
 services:
   manager:
-    image: 'ghcr.io/flux-agi/flux-env-manager:latest'
+    image: 'ghcr.io/flux-agi/flux-manager:latest'
     restart: unless-stopped
     ports:
       - "8080:8080"
